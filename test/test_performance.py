@@ -136,6 +136,27 @@ class PerformanceTests(unittest.TestCase):
         self.assertTrue(self.mxctl.device_is_online(Awake()))
         self.assertFalse(self.mxctl.device_is_online(AsleepPaired()))
 
+    def test_device_online_treats_no_such_device_as_offline(self):
+        class NoSuchDevice(Exception):
+            pass
+
+        class AsleepLightspeed:
+            # The receiver answers the ping with UNKNOWN_DEVICE; Solaar raises
+            # NoSuchDevice and leaves the pairing-time online=True in place.
+            online = True
+
+            def ping(self):
+                raise NoSuchDevice()
+
+        class Flaky:
+            online = True
+
+            def ping(self):
+                raise OSError("transient")
+
+        self.assertFalse(self.mxctl.device_is_online(AsleepLightspeed()))
+        self.assertTrue(self.mxctl.device_is_online(Flaky()))
+
     def test_reset_feature_probe_allows_another_query(self):
         class Feats:
             supported = False

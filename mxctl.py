@@ -801,7 +801,12 @@ def device_is_online(dev) -> bool:
     # constructs children with online=True. Only a live ping matches Solaar.
     try:
         return bool(dev.ping())
-    except Exception:
+    except Exception as exc:
+        # A Lightspeed receiver answers a ping for an asleep child itself with
+        # UNKNOWN_DEVICE, and Solaar's Device.ping() lets that escape as
+        # NoSuchDevice without clearing online. It is a live "not reachable".
+        if type(exc).__name__ == "NoSuchDevice":
+            return False
         return getattr(dev, "online", None) is True
 
 
